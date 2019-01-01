@@ -1,5 +1,6 @@
 package mdoc
 
+import sbt.Def
 import sbt.Keys._
 import sbt._
 import scala.collection.mutable.ListBuffer
@@ -16,6 +17,7 @@ object Main {
 }
 
 object MdocPlugin extends AutoPlugin {
+  case class CompileOptions(options: Seq[String], classpath: Seq[File])
   object autoImport {
     val mdoc =
       inputKey[Unit](
@@ -41,11 +43,22 @@ object MdocPlugin extends AutoPlugin {
         "Additional command-line arguments to pass on every mdoc invocation. " +
           "For example, add --no-link-hygiene to disable link hygiene."
       )
+    val mdocExtraProjects =
+      taskKey[Map[String, CompileOptions]](
+        "Additional projects to configure classpaths."
+      )
     val mdocAutoDependency =
       settingKey[Boolean](
         "If false, do not add mdoc as a library dependency this project. " +
           "Default value is true."
       )
+    def mdocCompileOptions(ref: Project): Def.Initialize[Task[CompileOptions]] =
+      Def.task {
+        CompileOptions(
+          scalacOptions.in(ref, Compile).value,
+          fullClasspath.in(ref, Compile).value.map(_.data)
+        )
+      }
   }
   import autoImport._
 
@@ -76,6 +89,17 @@ object MdocPlugin extends AutoPlugin {
       mdocVariables.value.foreach {
         case (key, value) =>
           props.put(key, value)
+      }
+      mdocExtraProjects.value.foreach {
+        case (id, options) =>
+          props.put(
+            s"$id.scalacOptions",
+            options.options.mkString(" ")
+          )
+          props.put(
+            s"$id.classpath",
+            options.classpath.mkString(java.io.File.pathSeparator)
+          )
       }
       props.put("in", mdocIn.value.toString)
       props.put("out", mdocOut.value.toString)

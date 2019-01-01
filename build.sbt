@@ -84,6 +84,15 @@ lazy val testsInput = project
     skip in publish := true
   )
 
+val jsapp = project
+  .in(file("tests/jsapp"))
+  .settings(
+    libraryDependencies ++= List(
+      "org.scala-js" %%% "scalajs-dom" % "0.9.6"
+    )
+  )
+  .enablePlugins(ScalaJSPlugin)
+
 lazy val unit = project
   .in(file("tests/unit"))
   .settings(
@@ -92,13 +101,6 @@ lazy val unit = project
       "-deprecation"
     ),
     addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.8"),
-    resourceGenerators.in(Test) += Def.task {
-      val out = managedResourceDirectories.in(Test).value.head / "mdoc.properties"
-      val props = new java.util.Properties()
-      props.put("scalacOptions", scalacOptions.in(Compile).value.mkString(" "))
-      IO.write(props, "mdoc properties", out)
-      List(out)
-    },
     resolvers += Resolver.bintrayRepo("cibotech", "public"),
     libraryDependencies ++= List(
       "com.cibo" %% "evilplot" % "0.6.0",
@@ -113,10 +115,13 @@ lazy val unit = project
     buildInfoPackage := "tests",
     buildInfoKeys := Seq[BuildInfoKey](
       "testsInputClassDirectory" -> classDirectory.in(testsInput, Compile).value
+    ),
+    mdocExtraProjects := Map(
+      "js" -> mdocCompileOptions(jsapp).value
     )
   )
-  .dependsOn(mdoc, testsInput)
-  .enablePlugins(BuildInfoPlugin)
+  .dependsOn(mdoc, js, testsInput)
+  .enablePlugins(BuildInfoPlugin, MdocPlugin)
 
 lazy val plugin = project
   .in(file("mdoc-sbt"))
@@ -137,6 +142,17 @@ lazy val plugin = project
       List(out)
     }
   )
+
+lazy val js = project
+  .in(file("mdoc-js"))
+  .settings(
+    moduleName := "mdoc-js",
+    libraryDependencies ++= List(
+      "org.scala-js" % "scalajs-compiler" % "0.6.26" cross CrossVersion.full,
+      "org.scala-js" %% "scalajs-tools" % "0.6.26"
+    )
+  )
+  .dependsOn(mdoc)
 
 lazy val lsp = project
   .in(file("mdoc-lsp"))
@@ -164,6 +180,9 @@ lazy val docs = project
     watchSources += baseDirectory.in(ThisBuild).value / "docs",
     cancelable in Global := true,
     MdocPlugin.autoImport.mdoc := run.in(Compile).evaluated,
+    mdocExtraProjects := Map(
+      "js" -> mdocCompileOptions(jsapp).value
+    ),
     mdocVariables := {
       val stableVersion: String =
         version.value.replaceFirst("\\+.*", "")
@@ -174,5 +193,5 @@ lazy val docs = project
       )
     }
   )
-  .dependsOn(mdoc, plugin)
+  .dependsOn(mdoc, js, plugin)
   .enablePlugins(DocusaurusPlugin)

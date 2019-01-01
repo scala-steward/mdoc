@@ -10,6 +10,7 @@ import java.nio.file.Files
 import java.nio.file.InvalidPathException
 import java.nio.file.PathMatcher
 import mdoc.PostModifier
+import mdoc.PreModifier
 import metaconfig.Conf
 import metaconfig.ConfDecoder
 import metaconfig.ConfEncoder
@@ -119,6 +120,8 @@ case class Settings(
     stringModifiers: List[StringModifier] = StringModifier.default(),
     @Hidden()
     postModifiers: List[PostModifier] = PostModifier.default(),
+    @Hidden()
+    preModifiers: List[PreModifier] = PreModifier.default(),
     @Hidden()
     @Description("The input stream to listen for enter key during file watching.")
     inputStream: InputStream = System.in,

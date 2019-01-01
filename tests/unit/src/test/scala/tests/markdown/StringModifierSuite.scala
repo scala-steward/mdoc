@@ -67,10 +67,10 @@ class StringModifierSuite extends BaseMarkdownSuite {
       |```
     """.stripMargin,
     """
-      |error: exception.md:3:1: error: exception
+      |error: exception.md:3:1: error: mdoc:exception exception
       |hello
       |^^^^^
-      |mdoc.internal.markdown.StringModifierException: exception
+      |mdoc.internal.markdown.ModifierException: mdoc:exception exception
       |Caused by: java.lang.IllegalArgumentException: boom
       |	at tests.markdown.StringModifierSuite$$anon$3.process(StringModifierSuite.scala:30)
     """.stripMargin

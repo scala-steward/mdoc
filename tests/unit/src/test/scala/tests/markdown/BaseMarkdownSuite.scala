@@ -54,11 +54,11 @@ abstract class BaseMarkdownSuite extends org.scalatest.FunSuite with DiffAsserti
     }
   }
 
-  def check(
+  def checkCompiles(
       name: String,
       original: String,
-      expected: String,
-      settings: Settings = baseSettings
+      settings: Settings = baseSettings,
+      onOutput: String => Unit = _ => ()
   ): Unit = {
     test(name) {
       val reporter = newReporter()
@@ -71,8 +71,19 @@ abstract class BaseMarkdownSuite extends org.scalatest.FunSuite with DiffAsserti
       val stdout = fansi.Str(colorOut).plainText
       assert(!reporter.hasErrors, stdout)
       assert(!reporter.hasWarnings, stdout)
-      assertNoDiffOrPrintExpected(obtained, expected)
+      onOutput(obtained)
     }
+  }
+
+  def check(
+      name: String,
+      original: String,
+      expected: String,
+      settings: Settings = baseSettings
+  ): Unit = {
+    checkCompiles(name, original, settings, obtained => {
+      assertNoDiffOrPrintExpected(obtained, expected)
+    })
   }
 
 }
