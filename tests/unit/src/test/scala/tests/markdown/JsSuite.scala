@@ -1,8 +1,10 @@
 package tests.markdown
 
-import StringSyntax._
+import scala.meta.io.Classpath
+import tests.markdown.StringSyntax._
 
 class JsSuite extends BaseMarkdownSuite {
+  override lazy val baseSettings = super.baseSettings
 
   def suffix(name: String): String =
     s"""|<script type="text/javascript" src="$name.md.js" defer></script>
@@ -37,7 +39,7 @@ class JsSuite extends BaseMarkdownSuite {
       |```
     """.stripMargin,
     """
-      |error: error.md:3:14: error: type mismatch;
+      |error: error.md:3:14: type mismatch;
       | found   : String("")
       | required: Int
       |val x: Int = ""
@@ -85,12 +87,12 @@ class JsSuite extends BaseMarkdownSuite {
       |val y: String = 42
       |```
     """.stripMargin,
-    """|error: edit.md:3:14: error: type mismatch;
+    """|error: edit.md:3:14: type mismatch;
        | found   : String("")
        | required: Int
        |val x: Int = ""
        |             ^^
-       |error: edit.md:7:17: error: type mismatch;
+       |error: edit.md:7:17: type mismatch;
        | found   : Int(42)
        | required: String
        |val y: String = 42
@@ -109,7 +111,7 @@ class JsSuite extends BaseMarkdownSuite {
       |println(x)
       |```
     """.stripMargin,
-    """|error: isolated.md:7:9: error: not found: value x
+    """|error: isolated.md:7:9: not found: value x
        |println(x)
        |        ^
     """.stripMargin
@@ -198,5 +200,24 @@ class JsSuite extends BaseMarkdownSuite {
       |println(jsapp.ExampleJS.greeting)
       |```
     """.stripMargin
+  )
+
+  checkError(
+    "no-dom",
+    """
+      |```scala mdoc:js
+      |println(jsapp.ExampleJS.greeting)
+      |```
+    """.stripMargin,
+    """|error: <mdoc>:3 object scalajs is not a member of package org
+       |def run0(node: _root_.org.scalajs.dom.raw.Element): Unit = {
+       |                          ^
+    """.stripMargin,
+    settings = {
+      val base = super.baseSettings
+      val noScalajsDom = Classpath(base.site("js.classpath")).entries
+        .filterNot(_.toNIO.getFileName.toString.contains("scalajs-dom"))
+      base.copy(site = base.site.updated("js.classpath", Classpath(noScalajsDom).syntax))
+    }
   )
 }

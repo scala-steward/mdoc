@@ -202,13 +202,23 @@ class MarkdownCompiler(
     if (msgOrNull == null) "" else msgOrNull
   private def report(vreporter: Reporter, edit: TokenEditDistance): Unit = {
     sreporter.infos.foreach {
-      case info @ sreporter.Info(pos, msgOrNull, severity) =>
+      case sreporter.Info(pos, msgOrNull, severity) =>
         val msg = nullableMessage(msgOrNull)
         val mpos = toMetaPosition(edit, pos)
+        val actualMessage =
+          if (mpos == Position.None) {
+            new CodeBuilder()
+              .println(s"<mdoc>:${pos.line} $msg")
+              .println(pos.lineContent)
+              .println(pos.lineCaret)
+              .toString
+          } else {
+            msg
+          }
         severity match {
-          case sreporter.ERROR => vreporter.error(mpos, msg)
-          case sreporter.INFO => vreporter.info(mpos, msg)
-          case sreporter.WARNING => vreporter.warning(mpos, msg)
+          case sreporter.ERROR => vreporter.error(mpos, actualMessage)
+          case sreporter.INFO => vreporter.info(mpos, actualMessage)
+          case sreporter.WARNING => vreporter.warning(mpos, actualMessage)
         }
       case _ =>
     }

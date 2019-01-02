@@ -6,11 +6,13 @@ import java.io.PrintStream
 import java.nio.file.Files
 import mdoc.Reporter
 import mdoc.internal.cli.Context
+import mdoc.internal.cli.MdocProperties
 import mdoc.internal.cli.Settings
 import mdoc.internal.io.ConsoleReporter
 import mdoc.internal.markdown.Markdown
 import mdoc.internal.markdown.MarkdownCompiler
 import scala.meta.inputs.Input
+import scala.meta.internal.io.PathIO
 import scala.meta.io.AbsolutePath
 import scala.meta.testkit.DiffAssertions
 import tests.markdown.StringSyntax._
@@ -25,12 +27,18 @@ abstract class BaseMarkdownSuite extends org.scalatest.FunSuite with DiffAsserti
           "version" -> "1.0"
         )
       )
+      .withProperties(MdocProperties.default(PathIO.workingDirectory))
   private val myStdout = new ByteArrayOutputStream()
-  private def newReporter(): ConsoleReporter = new ConsoleReporter(new PrintStream(myStdout))
+  private def newReporter(): ConsoleReporter = {
+    new ConsoleReporter(new PrintStream(myStdout))
+  }
   protected def scalacOptions: String = ""
   private val compiler = MarkdownCompiler.fromClasspath("", scalacOptions)
-  private def newContext(settings: Settings, reporter: Reporter) =
+  private def newContext(settings: Settings, reporter: ConsoleReporter) = {
+    settings.validate(reporter)
+    if (reporter.hasErrors) fail()
     Context(settings, reporter, compiler)
+  }
 
   def getMarkdownSettings(context: Context): MutableDataSet = {
     myStdout.reset()

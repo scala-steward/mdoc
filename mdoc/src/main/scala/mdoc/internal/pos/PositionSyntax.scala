@@ -91,7 +91,8 @@ object PositionSyntax {
   ): String =
     pos match {
       case Position.None =>
-        s"$severity: $message"
+        if (severity.isEmpty) message
+        else s"$severity: $message"
       case _ =>
         new java.lang.StringBuilder()
           .append(if (includePath) pos.lineInput else "")

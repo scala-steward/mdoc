@@ -88,7 +88,7 @@ val jsapp = project
   .in(file("tests/jsapp"))
   .settings(
     libraryDependencies ++= List(
-//      "org.scala-js" %%% "scalajs-dom" % "0.9.6"
+      "org.scala-js" %%% "scalajs-dom" % "0.9.6"
     )
   )
   .enablePlugins(ScalaJSPlugin)

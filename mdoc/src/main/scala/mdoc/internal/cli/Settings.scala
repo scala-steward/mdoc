@@ -9,6 +9,7 @@ import java.nio.file.FileSystems
 import java.nio.file.Files
 import java.nio.file.InvalidPathException
 import java.nio.file.PathMatcher
+import mdoc.OnLoadContext
 import mdoc.PostModifier
 import mdoc.PreModifier
 import metaconfig.Conf
@@ -162,10 +163,20 @@ case class Settings(
     (include.isEmpty || include.exists(_.matches(path.toNIO))) &&
     !isExplicitlyExcluded(path)
   }
+
+  def onLoad(reporter: Reporter): Unit = {
+    val ctx = new OnLoadContext(reporter, this)
+    preModifiers.foreach(_.onLoad(ctx))
+  }
   def validate(logger: Reporter): Configured[Context] = {
     if (Files.exists(in.toNIO)) {
       val compiler = MarkdownCompiler.fromClasspath(classpath, scalacOptions)
-      Configured.ok(Context(this, logger, compiler))
+      onLoad(logger)
+      if (logger.hasErrors) {
+        Configured.error("Failed to load modifiers")
+      } else {
+        Configured.ok(Context(this, logger, compiler))
+      }
     } else {
       ConfError.fileDoesNotExist(in.toNIO).notOk
     }

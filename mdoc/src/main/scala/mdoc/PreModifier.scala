@@ -13,6 +13,7 @@ import scala.meta.io.RelativePath
 
 trait PreModifier {
   val name: String
+  def onLoad(ctx: OnLoadContext): Unit = ()
   def process(ctx: PreModifierContext): String
   def postProcess(ctx: PostProcessContext): String = ""
 }
@@ -26,6 +27,13 @@ object PreModifier {
     ConfDecoder.instanceF[PreModifier](_ => ConfError.message("unsupported").notOk)
   implicit val encoder: ConfEncoder[PreModifier] =
     ConfEncoder.StringEncoder.contramap(mod => s"<${mod.name}>")
+}
+
+final class OnLoadContext private[mdoc] (
+    val reporter: Reporter,
+    private[mdoc] val settings: Settings
+) {
+  def site: Map[String, String] = settings.site
 }
 
 final class PostProcessContext private[mdoc] (

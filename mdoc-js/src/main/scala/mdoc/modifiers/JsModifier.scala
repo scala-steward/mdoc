@@ -2,9 +2,9 @@ package mdoc.modifiers
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
+import mdoc.OnLoadContext
 import mdoc.PostProcessContext
 import mdoc.PreModifierContext
-import mdoc.internal.cli.MdocProperties
 import mdoc.internal.io.ConsoleReporter
 import mdoc.internal.livereload.Resources
 import mdoc.internal.markdown.CodeBuilder
@@ -16,6 +16,7 @@ import org.scalajs.core.tools.io.IRFileCache.VirtualRelativeIRFile
 import org.scalajs.core.tools.io.MemVirtualSerializedScalaJSIRFile
 import org.scalajs.core.tools.io.VirtualScalaJSIRFile
 import org.scalajs.core.tools.io.WritableMemVirtualJSFile
+import org.scalajs.core.tools.linker.Linker
 import org.scalajs.core.tools.linker.StandardLinker
 import org.scalajs.core.tools.logging.Level
 import org.scalajs.core.tools.logging.Logger
@@ -23,44 +24,21 @@ import org.scalajs.core.tools.sem.Semantics
 import scala.collection.mutable.ListBuffer
 import scala.meta.Term
 import scala.meta.inputs.Input
-import scala.meta.internal.io.PathIO
 import scala.meta.io.Classpath
 import scala.reflect.io.VirtualDirectory
 
 class JsModifier extends mdoc.PreModifier {
-  val name = "js"
-  lazy val props =
-    MdocProperties.default(PathIO.workingDirectory)
-  lazy val linker = StandardLinker(
-    StandardLinker
-      .Config()
-      .withSemantics(Semantics.Defaults)
-      .withSourceMap(false)
-      .withClosureCompilerIfAvailable(false)
-  )
+  override val name = "js"
+
   val target = new VirtualDirectory("(memory)", None)
-  val scalacOptions = props.site("js.scalacOptions")
-  val classpath = props.site("js.classpath")
-  val compiler = new MarkdownCompiler(classpath, scalacOptions, target)
-  val irCache = new IRFileCache
-  lazy val virtualIrFiles: Seq[VirtualRelativeIRFile] = {
-    val irContainer =
-      IRFileCache.IRContainer.fromClasspath(Classpath(classpath).entries.map(_.toFile))
-    val cache = irCache.newCache
-    cache.cached(irContainer)
-  }
+  var mountNode = "node"
+  var linker: Linker = _
+  var compiler: MarkdownCompiler = _
+  var virtualIrFiles: Seq[VirtualRelativeIRFile] = _
+  var classpathHash: Int = 0
   var reporter: mdoc.Reporter = new ConsoleReporter(System.out)
   var gensym = new Gensym()
-  var minLevel = props.site.get("js.level") match {
-    case Some("info") => Level.Info
-    case Some("warn") => Level.Warn
-    case Some("error") => Level.Error
-    case Some("debug") => Level.Debug
-    case Some(unknown) =>
-      reporter.warning(s"unknown 'js.level': $unknown")
-      Level.Info
-    case None => Level.Info
-  }
+  var minLevel: Level = Level.Info
   val sjsLogger: Logger = new Logger {
     override def log(level: Level, message: => String): Unit = {
       if (level >= minLevel) {
@@ -75,15 +53,52 @@ class JsModifier extends mdoc.PreModifier {
       reporter.error(t)
   }
 
-  val mountNode = props.site.getOrElse("js.mountNode", "node")
-
-  val runs = ListBuffer.empty[String]
-  val inputs = ListBuffer.empty[Input]
+  private val runs = ListBuffer.empty[String]
+  private val inputs = ListBuffer.empty[Input]
 
   def reset(): Unit = {
     runs.clear()
     inputs.clear()
     gensym.reset()
+  }
+
+  override def onLoad(ctx: OnLoadContext): Unit = {
+    val props = ctx.site
+    val classpath = props("js.classpath")
+    val scalacOptions = props("js.scalacOptions")
+    val newClasspathHash = (classpath, scalacOptions).hashCode()
+    // Reuse the  linker and compiler when the classpath+scalacOptions haven't changed
+    // to speed up unit tests by nearly 2x.
+    if (classpathHash != newClasspathHash) {
+      linker = StandardLinker(
+        StandardLinker
+          .Config()
+          .withSemantics(Semantics.Defaults)
+          .withSourceMap(false)
+          .withClosureCompilerIfAvailable(false)
+      )
+      classpathHash = newClasspathHash
+      compiler = new MarkdownCompiler(classpath, scalacOptions, target)
+      virtualIrFiles = {
+        val irCache = new IRFileCache
+        val irContainer =
+          IRFileCache.IRContainer.fromClasspath(Classpath(classpath).entries.map(_.toFile))
+        val cache = irCache.newCache
+        cache.cached(irContainer)
+      }
+    }
+    mountNode = props.getOrElse("js.mountNode", mountNode)
+    reporter = ctx.reporter
+    minLevel = props.get("js.level") match {
+      case None => Level.Info
+      case Some("info") => Level.Info
+      case Some("warn") => Level.Warn
+      case Some("error") => Level.Error
+      case Some("debug") => Level.Debug
+      case Some(unknown) =>
+        reporter.warning(s"unknown 'js.level': $unknown")
+        Level.Info
+    }
   }
 
   override def postProcess(ctx: PostProcessContext): String = {
@@ -157,7 +172,6 @@ class JsModifier extends mdoc.PreModifier {
           sliced
         )
       }
-    reporter = ctx.reporter
     val run = gensym.fresh("run")
     inputs += input
     val id = s"mdoc-js-$run"
