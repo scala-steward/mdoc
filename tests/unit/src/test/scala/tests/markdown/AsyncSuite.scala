@@ -1,12 +1,5 @@
 package tests.markdown
 
-import java.util.concurrent.Executors
-import scala.concurrent.Await
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
-import scala.concurrent.duration.Duration
-
 class AsyncSuite extends BaseMarkdownSuite {
   check(
     "await",
