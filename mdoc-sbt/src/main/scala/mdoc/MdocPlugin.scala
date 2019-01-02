@@ -1,7 +1,5 @@
 package mdoc
 
-import sbt.Def
-import sbt.Def
 import sbt.Keys._
 import sbt._
 import scala.collection.mutable.ListBuffer
@@ -46,7 +44,7 @@ object MdocPlugin extends AutoPlugin {
     val mdocJS =
       settingKey[Option[Project]](
         "Optional Scala.js classpath and compiler options to use for the mdoc:js modifier. " +
-          "To use this setting, set the value to `mdocJS := Some(mdocCompileOptions(jsproject).value)` where `jsproject` must be a Scala.js project."
+          "To use this setting, set the value to `mdocJS := Some(jsproject)` where `jsproject` must be a Scala.js project."
       )
     val mdocAutoDependency =
       settingKey[Boolean](
@@ -89,11 +87,11 @@ object MdocPlugin extends AutoPlugin {
         }
         mdocJSCompileOptions.value.foreach { options =>
           props.put(
-            s"js.scalacOptions",
+            s"js-scalacOptions",
             options.options.mkString(" ")
           )
           props.put(
-            s"js.classpath",
+            s"js-classpath",
             options.classpath.mkString(java.io.File.pathSeparator)
           )
         }
@@ -104,6 +102,8 @@ object MdocPlugin extends AutoPlugin {
           scalacOptions.in(Compile).value.mkString(" ")
         )
         val classpath = ListBuffer.empty[File]
+        // Can't use fullClasspath.value because it introduces cyclic dependency between
+        // compilation and resource generation.
         classpath ++= dependencyClasspath.in(Compile).value.iterator.map(_.data)
         classpath += classDirectory.in(Compile).value
         props.put(

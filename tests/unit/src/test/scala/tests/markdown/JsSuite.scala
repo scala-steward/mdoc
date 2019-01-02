@@ -218,9 +218,9 @@ class JsSuite extends BaseMarkdownSuite {
     """.stripMargin,
     settings = {
       val base = super.baseSettings
-      val noScalajsDom = Classpath(base.site("js.classpath")).entries
+      val noScalajsDom = Classpath(base.site("js-classpath")).entries
         .filterNot(_.toNIO.getFileName.toString.contains("scalajs-dom"))
-      base.copy(site = base.site.updated("js.classpath", Classpath(noScalajsDom).syntax))
+      base.copy(site = base.site.updated("js-classpath", Classpath(noScalajsDom).syntax))
     }
   )
 

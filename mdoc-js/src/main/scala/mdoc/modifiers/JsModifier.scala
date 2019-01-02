@@ -57,10 +57,12 @@ class JsModifier extends mdoc.PreModifier {
   private val runs = ListBuffer.empty[String]
   private val inputs = ListBuffer.empty[Input]
 
-  def reset(): Unit = {
+  def reset(): (List[String], List[Input]) = {
+    val result = (runs.toList, inputs.toList)
     runs.clear()
     inputs.clear()
     gensym.reset()
+    result
   }
 
   def newLinker(): Linker = StandardLinker(
@@ -72,12 +74,12 @@ class JsModifier extends mdoc.PreModifier {
   )
 
   override def onLoad(ctx: OnLoadContext): Unit = {
-    (ctx.site.get("js.classpath"), ctx.site.get("js.scalacOptions")) match {
+    (ctx.site.get("js-classpath"), ctx.site.get("js-scalacOptions")) match {
       case (None, None) => // nothing to do
       case (Some(_), None) =>
-        ctx.reporter.error("missing key: 'js.scalacOptions'")
+        ctx.reporter.error("missing key: 'js-scalacOptions'")
       case (None, Some(_)) =>
-        ctx.reporter.error("missing key: 'js.classpath'")
+        ctx.reporter.error("missing key: 'js-classpath'")
       case (Some(classpath), Some(scalacOptions)) =>
         val newClasspathHash = (classpath, scalacOptions).hashCode()
         // Reuse the  linker and compiler when the classpath+scalacOptions haven't changed
@@ -118,7 +120,7 @@ class JsModifier extends mdoc.PreModifier {
           ctx.reporter.error(
             inputs.head.toPosition,
             "Can't process `mdoc:js` code fence because Scala.js is not configured. " +
-              "To fix this problem, set the site variables `js.classpath` and `js.scalacOptions`. " +
+              "To fix this problem, set the site variables `js-classpath` and `js-scalacOptions`. " +
               "If you are using sbt-mdoc, update the `mdocJS` setting to point to a Scala.js project."
           )
           ""
@@ -129,6 +131,7 @@ class JsModifier extends mdoc.PreModifier {
   }
 
   def postProcess(ctx: PostProcessContext, compiler: MarkdownCompiler): String = {
+    val (runs, inputs) = reset()
     val code = new CodeBuilder()
     val wrapped = code
       .println("object mdocjs {")
@@ -140,7 +143,6 @@ class JsModifier extends mdoc.PreModifier {
     val oldErrors = ctx.reporter.errorCount
     compiler.compileSources(input, ctx.reporter, edit)
     val hasErrors = ctx.reporter.errorCount > oldErrors
-    reset()
     val sjsir = for {
       x <- target.toList
       if x.name.endsWith(".sjsir")
