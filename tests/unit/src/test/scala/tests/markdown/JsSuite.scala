@@ -1,10 +1,13 @@
 package tests.markdown
 
+import mdoc.internal.cli.Settings
 import scala.meta.io.Classpath
 import tests.markdown.StringSyntax._
 
 class JsSuite extends BaseMarkdownSuite {
-  override lazy val baseSettings = super.baseSettings
+  // NOTE(olafur) Optimization. Cache settings to reuse the Scala.js compiler instance.
+  // By default, we create new modifiers for each unit test, which is usually fast.
+  override lazy val baseSettings: Settings = super.baseSettings
 
   def suffix(name: String): String =
     s"""|<script type="text/javascript" src="$name.md.js" defer></script>
@@ -219,5 +222,18 @@ class JsSuite extends BaseMarkdownSuite {
         .filterNot(_.toNIO.getFileName.toString.contains("scalajs-dom"))
       base.copy(site = base.site.updated("js.classpath", Classpath(noScalajsDom).syntax))
     }
+  )
+
+  checkError(
+    "mods-error",
+    """
+      |```scala mdoc:js:shared:not
+      |println(1)
+      |```
+    """.stripMargin,
+    """|error: mods-error.md:2:25: invalid modifier 'not'
+       |```scala mdoc:js:shared:not
+       |                        ^^^
+    """.stripMargin
   )
 }

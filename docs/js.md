@@ -13,7 +13,6 @@ Add this import.
 
 ```scala mdoc:js:shared
 import org.scalajs.dom.window._
-def name = "a"
 ```
 
 ## `setInterval`
@@ -35,7 +34,6 @@ The `setTimeout` method runs a function after a given delay.
 ```scala mdoc:js
 Loading...
 ---
-println(name)
 var n = 0
 def loop(): Unit = {
   setTimeout(() => {

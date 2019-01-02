@@ -53,7 +53,7 @@ class StringModifierSuite extends BaseMarkdownSuite {
       |```
     """.stripMargin,
     """
-      |error: reporter.md:3:1: error: This is a message
+      |error: reporter.md:3:1: This is a message
       |hello
       |^^^^^
     """.stripMargin
@@ -67,7 +67,7 @@ class StringModifierSuite extends BaseMarkdownSuite {
       |```
     """.stripMargin,
     """
-      |error: exception.md:3:1: error: mdoc:exception exception
+      |error: exception.md:3:1: mdoc:exception exception
       |hello
       |^^^^^
       |mdoc.internal.markdown.ModifierException: mdoc:exception exception

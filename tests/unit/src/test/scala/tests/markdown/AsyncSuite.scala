@@ -32,7 +32,7 @@ class AsyncSuite extends BaseMarkdownSuite {
       |Await.result(Future(Thread.sleep(1000)), Duration("10ms"))
       |```
     """.stripMargin,
-    """|error: timeout.md:4:1: error: Futures timed out after [10 milliseconds]
+    """|error: timeout.md:4:1: Futures timed out after [10 milliseconds]
        |Await.result(Future(Thread.sleep(1000)), Duration("10ms"))
        |^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
        |java.lang.ExceptionInInitializerError

@@ -207,11 +207,16 @@ class MarkdownCompiler(
         val mpos = toMetaPosition(edit, pos)
         val actualMessage =
           if (mpos == Position.None) {
-            new CodeBuilder()
-              .println(s"<mdoc>:${pos.line} $msg")
-              .println(pos.lineContent)
-              .println(pos.lineCaret)
-              .toString
+            val line = pos.lineContent
+            if (line.nonEmpty) {
+              new CodeBuilder()
+                .println(s"<mdoc>:${pos.line} $msg")
+                .println(pos.lineContent)
+                .println(pos.lineCaret)
+                .toString
+            } else {
+              msg
+            }
           } else {
             msg
           }

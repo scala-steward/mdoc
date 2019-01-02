@@ -61,7 +61,7 @@ class BlockInput(ctx: Context, baseInput: Input) {
     ctx.reporter.error(pos, message)
   }
   private def invalidCombination(block: FencedCodeBlock, mod1: String, mod2: String): Boolean = {
-    invalid(block, s"invalid combination of modifiers '$mod1' and '$mod2' are ")
+    invalid(block, s"invalid combination of modifiers '$mod1' and '$mod2'")
     false
   }
 
