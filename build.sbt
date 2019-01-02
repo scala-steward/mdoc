@@ -88,7 +88,7 @@ val jsapp = project
   .in(file("tests/jsapp"))
   .settings(
     libraryDependencies ++= List(
-      "org.scala-js" %%% "scalajs-dom" % "0.9.6"
+//      "org.scala-js" %%% "scalajs-dom" % "0.9.6"
     )
   )
   .enablePlugins(ScalaJSPlugin)
@@ -116,9 +116,7 @@ lazy val unit = project
     buildInfoKeys := Seq[BuildInfoKey](
       "testsInputClassDirectory" -> classDirectory.in(testsInput, Compile).value
     ),
-    mdocExtraProjects := Map(
-      "js" -> mdocCompileOptions(jsapp).value
-    )
+    mdocJS := Some(mdocCompileOptions(jsapp).value)
   )
   .dependsOn(mdoc, js, testsInput)
   .enablePlugins(BuildInfoPlugin, MdocPlugin)
@@ -180,9 +178,7 @@ lazy val docs = project
     watchSources += baseDirectory.in(ThisBuild).value / "docs",
     cancelable in Global := true,
     MdocPlugin.autoImport.mdoc := run.in(Compile).evaluated,
-    mdocExtraProjects := Map(
-      "js" -> mdocCompileOptions(jsapp).value
-    ),
+    mdocJS := Some(mdocCompileOptions(jsapp).value),
     mdocVariables := {
       val stableVersion: String =
         version.value.replaceFirst("\\+.*", "")

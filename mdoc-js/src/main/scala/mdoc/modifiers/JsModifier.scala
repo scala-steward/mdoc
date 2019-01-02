@@ -84,49 +84,58 @@ class JsModifier extends mdoc.PreModifier {
     runs.clear()
     inputs.clear()
     gensym.reset()
-
   }
 
   override def postProcess(ctx: PostProcessContext): String = {
-    val code = new CodeBuilder()
-    val wrapped = code
-      .println("object mdocjs {")
-      .foreach(runs)(code.println)
-      .println("}")
-      .toString
-    val input = Input.VirtualFile(ctx.relativePath.toString(), wrapped)
-    val edit = TokenEditDistance.fromInputs(inputs, input)
-    compiler.compileSources(input, ctx.reporter, edit)
-    reset()
-    val sjsir = for {
-      x <- target.toList
-      if x.name.endsWith(".sjsir")
-    } yield {
-      val f = new MemVirtualSerializedScalaJSIRFile(x.path)
-      f.content = x.toByteArray
-      f: VirtualScalaJSIRFile
-    }
-    if (sjsir.isEmpty) {
+    if (runs.isEmpty) {
+      reset()
       ""
     } else {
-      val output = WritableMemVirtualJSFile("output.js")
-      linker.link(virtualIrFiles ++ sjsir, Nil, output, sjsLogger)
-      val outfile = ctx.outputFile.resolveSibling(_ + ".js")
-      val filename = outfile.toNIO.getFileName.toString
-      Files.createDirectories(outfile.toNIO.getParent)
-      Files.write(
-        outfile.toNIO,
-        output.content.getBytes(StandardCharsets.UTF_8)
-      )
-      val mdocjs = Resources.readPath("/mdoc.js")
-      Files.write(
-        outfile.toNIO.resolveSibling("mdoc.js"),
-        mdocjs.getBytes(StandardCharsets.UTF_8)
-      )
-      new CodeBuilder()
-        .println(s"""<script type="text/javascript" src="$filename" defer></script>""")
-        .println(s"""<script type="text/javascript" src="mdoc.js" defer></script>""")
+      val code = new CodeBuilder()
+      val wrapped = code
+        .println("object mdocjs {")
+        .foreach(runs)(code.println)
+        .println("}")
         .toString
+      val input = Input.VirtualFile(ctx.relativePath.toString(), wrapped)
+      val edit = TokenEditDistance.fromInputs(inputs, input)
+      val oldErrors = ctx.reporter.errorCount
+      compiler.compileSources(input, ctx.reporter, edit)
+      val hasErrors = ctx.reporter.errorCount > oldErrors
+      reset()
+      val sjsir = for {
+        x <- target.toList
+        if x.name.endsWith(".sjsir")
+      } yield {
+        val f = new MemVirtualSerializedScalaJSIRFile(x.path)
+        f.content = x.toByteArray
+        f: VirtualScalaJSIRFile
+      }
+      if (sjsir.isEmpty) {
+        if (!hasErrors) {
+          ctx.reporter.error("Scala.js compilation failed")
+        }
+        ""
+      } else {
+        val output = WritableMemVirtualJSFile("output.js")
+        linker.link(virtualIrFiles ++ sjsir, Nil, output, sjsLogger)
+        val outfile = ctx.outputFile.resolveSibling(_ + ".js")
+        val filename = outfile.toNIO.getFileName.toString
+        Files.createDirectories(outfile.toNIO.getParent)
+        Files.write(
+          outfile.toNIO,
+          output.content.getBytes(StandardCharsets.UTF_8)
+        )
+        val mdocjs = Resources.readPath("/mdoc.js")
+        Files.write(
+          outfile.toNIO.resolveSibling("mdoc.js"),
+          mdocjs.getBytes(StandardCharsets.UTF_8)
+        )
+        new CodeBuilder()
+          .println(s"""<script type="text/javascript" src="$filename" defer></script>""")
+          .println(s"""<script type="text/javascript" src="mdoc.js" defer></script>""")
+          .toString
+      }
     }
   }
   override def process(ctx: PreModifierContext): String = {

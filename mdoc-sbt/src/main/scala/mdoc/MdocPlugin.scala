@@ -43,9 +43,10 @@ object MdocPlugin extends AutoPlugin {
         "Additional command-line arguments to pass on every mdoc invocation. " +
           "For example, add --no-link-hygiene to disable link hygiene."
       )
-    val mdocExtraProjects =
-      taskKey[Map[String, CompileOptions]](
-        "Additional projects to configure classpaths."
+    val mdocJS =
+      taskKey[Option[CompileOptions]](
+        "Optional Scala.js classpath and compiler options to use for the mdoc:js modifier. " +
+          "To use this setting, set the value to `mdocJS := Some(mdocCompileOptions(jsproject).value)` where `jsproject` must be a Scala.js project."
       )
     val mdocAutoDependency =
       settingKey[Boolean](
@@ -90,16 +91,15 @@ object MdocPlugin extends AutoPlugin {
         case (key, value) =>
           props.put(key, value)
       }
-      mdocExtraProjects.value.foreach {
-        case (id, options) =>
-          props.put(
-            s"$id.scalacOptions",
-            options.options.mkString(" ")
-          )
-          props.put(
-            s"$id.classpath",
-            options.classpath.mkString(java.io.File.pathSeparator)
-          )
+      mdocJS.value.foreach { options =>
+        props.put(
+          s"js.scalacOptions",
+          options.options.mkString(" ")
+        )
+        props.put(
+          s"js.classpath",
+          options.classpath.mkString(java.io.File.pathSeparator)
+        )
       }
       props.put("in", mdocIn.value.toString)
       props.put("out", mdocOut.value.toString)

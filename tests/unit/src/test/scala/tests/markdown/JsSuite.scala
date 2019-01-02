@@ -4,6 +4,12 @@ import StringSyntax._
 
 class JsSuite extends BaseMarkdownSuite {
 
+  def suffix(name: String): String =
+    s"""|<script type="text/javascript" src="$name.md.js" defer></script>
+        |
+        |<script type="text/javascript" src="mdoc.js" defer></script>
+        |""".stripMargin
+
   check(
     "basic",
     """
@@ -157,19 +163,40 @@ class JsSuite extends BaseMarkdownSuite {
       | '''.stripMargin
       |```
     """.stripMargin.triplequoted,
-    """|```scala
-       |val x = '''
-       |  |a
-       |  | b
-       |  |  c
-       | '''.stripMargin
-       |```
-       |
-       |<div id="mdoc-js-run0" data-mdoc-js></div>
-       |
-       |<script type="text/javascript" src="stripMargin.md.js" defer></script>
-       |
-       |<script type="text/javascript" src="mdoc.js" defer></script>
-    """.stripMargin.triplequoted
+    s"""|```scala
+        |val x = '''
+        |  |a
+        |  | b
+        |  |  c
+        | '''.stripMargin
+        |```
+        |
+        |<div id="mdoc-js-run0" data-mdoc-js></div>
+        |
+        |${suffix("stripMargin")}
+        |""".stripMargin.triplequoted
+  )
+
+  check(
+    "invisible",
+    """
+      |```scala mdoc:js:invisible
+      |println("Hello!")
+      |```
+    """.stripMargin,
+    s"""|
+        |<div id="mdoc-js-run0" data-mdoc-js></div>
+        |
+        |${suffix("invisible")}
+        |""".stripMargin
+  )
+
+  checkCompiles(
+    "deps",
+    """
+      |```scala mdoc:js
+      |println(jsapp.ExampleJS.greeting)
+      |```
+    """.stripMargin
   )
 }
