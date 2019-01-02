@@ -116,7 +116,7 @@ lazy val unit = project
     buildInfoKeys := Seq[BuildInfoKey](
       "testsInputClassDirectory" -> classDirectory.in(testsInput, Compile).value
     ),
-    mdocJS := Some(mdocCompileOptions(jsapp).value)
+    mdocJS := Some(jsapp)
   )
   .dependsOn(mdoc, js, testsInput)
   .enablePlugins(BuildInfoPlugin, MdocPlugin)
@@ -132,6 +132,7 @@ lazy val plugin = project
       "org.scalameta" %% "testkit" % "4.0.0-M11" % Test
     ),
     resourceGenerators.in(Compile) += Def.task {
+
       val out =
         managedResourceDirectories.in(Compile).value.head / "sbt-mdoc.properties"
       val props = new java.util.Properties()
@@ -178,7 +179,7 @@ lazy val docs = project
     watchSources += baseDirectory.in(ThisBuild).value / "docs",
     cancelable in Global := true,
     MdocPlugin.autoImport.mdoc := run.in(Compile).evaluated,
-    mdocJS := Some(mdocCompileOptions(jsapp).value),
+    mdocJS := Some(jsapp),
     mdocVariables := {
       val stableVersion: String =
         version.value.replaceFirst("\\+.*", "")

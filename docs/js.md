@@ -3,44 +3,14 @@ id: js
 title: Scala.js
 ---
 
-# Scala.js
-
-This is a Scala.js guide.
-
-## Imports
-
-Add this import.
-
-```scala mdoc:js:shared
-import org.scalajs.dom.window._
-```
-
-## `setInterval`
-
-The `setInterval` method runs a function at every interval.
+Use the `mdoc:js` modifier to compile a code fence with Scala.js and evaluate it
+at HTML load time instead of at markdown generation time.
 
 ```scala mdoc:js
+import org.scalajs.dom.window._
 var n = 0
 setInterval(() => {
-  node.innerHTML = s"ticks: $n"
   n += 1
+  node.innerHTML = s"tick: $n"
 }, 1000)
-```
-
-## `setTimeout`
-
-The `setTimeout` method runs a function after a given delay.
-
-```scala mdoc:js
-Loading...
----
-var n = 0
-def loop(): Unit = {
-  setTimeout(() => {
-    n += 1
-    node.innerHTML = s"ticks: $n"
-    loop()
-  }, 2000)
-}
-loop()
 ```
