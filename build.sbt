@@ -15,7 +15,7 @@ addCommandAlias("testAllNonNative", rowsAt("testFull", scala213, parser))
 addCommandAlias("test212", rowsAt("testFull", scala212))
 addCommandAlias("test213", rowsAt("testFull", scala213))
 addCommandAlias("test33", rowsAt("testFull", scala3))
-// the next Scala is tested where the 3.8.4 job tested it
+// the next Scala is tested where the 3.9.0 job tested it
 addCommandAlias("test38", onEach("testFull", scala3next, List(unit, worksheets), Nil))
 
 def scalajsBinaryVersion = "1"
